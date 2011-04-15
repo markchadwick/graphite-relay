@@ -16,6 +16,7 @@ import org.jboss.netty.handler.codec.frame.LengthFieldPrepender
 import org.jboss.netty.util.HashedWheelTimer
 
 import graphite.relay.Update
+import graphite.relay.backend.codec.PickleEncoder
 import graphite.relay.overflow.OverflowHandler
 
 
@@ -37,40 +38,27 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
   handler.connect()
 
   def apply(update: Update) {
-    handler.channel match {
-      case Some(channel) ⇒
-        // Drain the queue if we need to 
-        Stream.continually(updateQueue.poll)
-              .takeWhile(_ != null)
-              .foreach(u ⇒ handleUpdate(u, channel))
+    enqueue(update)
 
-        handleUpdate(update, channel)
-
-      case None ⇒
-        handleHostDown(update)
+    handler.channel map { channel ⇒
+      val updates = getBatchUpdates()
+      if(!updates.isEmpty) {
+        try {
+          channel.write(updates)
+        } catch {
+          case ex ⇒ updates.foreach(enqueue)
+        }
+      }
     }
   }
 
   def shutdown() = bootstrap.releaseExternalResources()
 
-  /*
-   * (lp0
-   * (S'metric'
-   * p1
-   * (F123.0
-   * F456.0
-   * tp2
-   * tp3
-   * a.
-   */
-  private def handleUpdate(update: Update, channel: Channel) = {
-    val pickled = "(lp0\n(S'%s'\np1\n(F%s\nF%s\ntp2\ntp3\na.\n".format(
-      update.metric, update.value, update.timestamp).getBytes
-    val buffer = ChannelBuffers.copiedBuffer(pickled)
-    channel.write(buffer)
+  private def handleUpdate(updates: Traversable[Update], channel: Channel) = {
+    channel.write(updates)
   }
 
-  private def handleHostDown(update: Update) = {
+  private def enqueue(update: Update) = {
     if(updateQueue.size >= hostBuffer) {
       overflow(update)
     } else {
@@ -78,6 +66,8 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
     }
   }
 
+  private def getBatchUpdates() = 
+    Stream.continually(updateQueue.poll).takeWhile(_ != null)
 
   private def newBootstrap = new ClientBootstrap(
     new NioClientSocketChannelFactory(
@@ -87,10 +77,15 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
   private def numCores = Runtime.getRuntime.availableProcessors
 
   private def newPipleFactory = new ChannelPipelineFactory {
+
     def getPipeline = {
       val pipeline = Channels.pipeline
-     
-      pipeline.addLast("encoder", new LengthFieldPrepender(4))
+    
+      val prepender = new LengthFieldPrepender(4)
+      val encoder = new PickleEncoder()
+
+      pipeline.addLast("encoder", prepender)
+      pipeline.addLast("pickleEncoder", encoder) 
       pipeline.addLast("handler", handler)
 
       pipeline

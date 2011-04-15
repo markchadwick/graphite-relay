@@ -1,5 +1,6 @@
 package graphite.relay.backend
 
+import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
@@ -33,8 +34,7 @@ class BackendClientHandler(channels: ChannelGroup, bootstrap: ClientBootstrap,
 
   override def channelClosed(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
     channel = None
-    log.info("Disconnected from %s sleeping for %s seconds"
-              .format(remoteString, reconnect)) 
+    log.info("Disconnected from %s. Reconnecting in %s seconds" .format(remoteString, reconnect)) 
     timer.newTimeout(new TimerTask {
       def run(timeout: Timeout) = connect()
     }, reconnect, TimeUnit.SECONDS)
@@ -46,6 +46,9 @@ class BackendClientHandler(channels: ChannelGroup, bootstrap: ClientBootstrap,
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
-    log.error(e.getCause)
+    e.getCause match {
+      case conn: ConnectException ⇒ // these are handled
+      case ex ⇒ log.error(ex)
+    }
   }
 }
