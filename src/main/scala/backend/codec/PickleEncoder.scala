@@ -13,7 +13,7 @@ class PickleEncoder extends OneToOneEncoder {
     if(! msg.isInstanceOf[Traversable[Update]]) return msg.asInstanceOf[AnyRef]
 
     val updates = msg.asInstanceOf[Traversable[Update]]
-    val tuples = updates.map(u ⇒ (u.metric, (u.value, u.timestamp)))
+    val tuples = updates.map(u ⇒ (u.metric, (u.timestamp, u.value)))
 
     val buf = ChannelBuffers.dynamicBuffer()
     val pickle = new Pickle(buf)
