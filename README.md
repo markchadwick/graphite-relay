@@ -82,6 +82,25 @@ Like `relay.backendstrategy`, the FQCN of any other `OverflowHandler` in the
 set `overflow.directory` in the configuration to a directory that the current
 user has permission to create.
 
+A complete config file might be as follows:
+
+    relay.hostbuffer:   1000
+    relay.port:         2002
+    relay.reconnect:    2
+    
+    relay.backendstrategy: graphite.relay.backend.strategy.ConsistentHash
+    hash.replicas: 20
+
+    relay.overflowhandler: graphite.relay.overflow.LoggingOverflowHandler
+    overflow.directory:    /mnt/overflow/
+    
+    relay.backends: \
+        localhost:1234 \
+        localhost:1235 \
+        localhost:1236 \
+        localhost:1237
+
+
 Pickle Format
 -------------
 The included Pickle formatting is _very_ rudimentary and only groks the data
