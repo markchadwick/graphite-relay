@@ -78,7 +78,7 @@ class Pickle(out: Pickle.Writable) {
 
 
   def write(obj: AnyRef) {
-    index = 1
+    index = 0
     out.writeByte(PROTO)
     out.writeByte(VERSION)
     encodeAny(obj, true)
@@ -139,13 +139,9 @@ class Pickle(out: Pickle.Writable) {
   }
 
   private def encodeTupleN(tupn: Product, putVar: Boolean) {
-    /*
-    encodeAny(tup._1, false)
-    encodeAny(tup._2, false)
-    encodeAny(tup._3, false)
-    out.writeByte(TUPLE3)
-    if(putVar) put()
-    */
+    out.writeByte(MARK)
+    tupn.productIterator.foreach(i ⇒ encodeAny(i, putVar))
+    out.writeByte(TUPLE)
   }
 
   private def encodeShortString(s: String, putVar: Boolean) {
@@ -157,7 +153,7 @@ class Pickle(out: Pickle.Writable) {
 
   private def encodeLongString(s: String, putVar: Boolean) {
     out.writeByte(BINSTRING)
-    out.writeInt(s.length)
+    writeInt(s.length)
     s.getBytes.map(_.intValue).foreach(out.writeByte)
     if(putVar) put()
   }
@@ -184,17 +180,19 @@ class Pickle(out: Pickle.Writable) {
       val highBits = i >> 31
       if(highBits == 0 || highBits == -1) {
         out.writeByte(BININT)
-
-        out.writeByte((i >> 8) & 0xff)
-        out.writeByte(i & 0xff)
-
-        out.writeByte((i >> 24) & 0xff)
-        out.writeByte((i >> 16) & 0xff)
+        writeInt(i)
       } else {
         // write as string?!
         throw new RuntimeException("Won't write a string repr!")
       }
     }
+  }
+
+  private def writeInt(i: Int) {
+    out.writeByte(i & 0xff)
+    out.writeByte((i >> 8) & 0xff)
+    out.writeByte((i >> 16) & 0xff)
+    out.writeByte((i >> 24) & 0xff)
   }
 
   private def put() {

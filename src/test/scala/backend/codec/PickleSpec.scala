@@ -5,48 +5,82 @@ import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 
-import org.scalatest.FlatSpec
+import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 
-class PickleSpec extends FlatSpec with ShouldMatchers {
-  behavior of "Pickle"
+class PickleSpec extends Spec with ShouldMatchers {
 
-  shouldConvert("a small integer", 123, "123")
+  describe("Primatives") {
+    shouldBeBinaryEqual("a small integer", 123, "123")
+    shouldBeBinaryEqual("true", true, "True")
+    shouldBeBinaryEqual("false", false, "False")
+    shouldBeBinaryEqual("null", null, "None")
+    shouldBeBinaryEqual("negative one", -1, "-1")
+    shouldBeBinaryEqual("negative two", -2, "-2")
+    shouldBeBinaryEqual("a negative integer", -123, "-123")
+    shouldBeBinaryEqual("zero", 0, "0")
+    shouldBeBinaryEqual("a float", 3.5f, "3.5")
+    shouldBeBinaryEqual("a negative float", -3.5f, "-3.5")
+  }
 
-  shouldConvert("true", true, "True")
+  describe("Strings") {
+    shouldBeBinaryEqual("a short string", "hello", "'hello'")
 
-  shouldConvert("false", false, "False")
+    val longString = "*" * 260
+    shouldBeBinaryEqual("a long string", longString, "'%s'".format(longString))
+  }
 
-  shouldConvert("null", null, "None")
+  describe("Tuples") {
+    // empty tuple...?
+    shouldBeBinaryEqual("a tuple1", new Tuple1(1), "(1,)")
 
-  shouldConvert("negative one", -1, "-1")
+    shouldConvert("a tuple2", ("a", "b"), "('a', 'b')")
 
-  // shouldConvert("a negative integer", -123, "-123")
+    shouldConvert("a nested tuple 2", ("a", ("b", "c")), "('a', ('b', 'c'))")
 
-  shouldConvert("zero", 0, "0")
+    shouldConvert("another nested tuple 2", (("a", "b"), "c"),
+                  "(('a', 'b'), 'c')")
 
-  shouldConvert("a short string", "hello", "'hello'")
+    shouldConvert("a tuple3", (1, 2, 3), "(1, 2, 3)")
 
-  shouldConvert("a tuple1", new Tuple1(1), "(1,)")
+    shouldConvert("a long tuple", ("one", 2, 3, 4, (5, 5, 5)),
+                  "('one', 2, 3, 4, (5, 5, 5))")
+  }
 
-  shouldConvert("a tuple2", ("a", "b"), "('a', 'b')")
+  describe("Lists") {
+    shouldConvert("a simple list", List(1, 2, 3), "[1, 2, 3]")
 
-  shouldConvert("a nested tuple 2", ("a", ("b", "c")), "('a', ('b', 'c'))")
+    shouldConvert("an emptly list", Nil, "[]")
 
-  shouldConvert("another nested tuple 2", (("a", "b"), "c"),
-                "(('a', 'b'), 'c')")
+    shouldConvert("a convert a homogonous list", List(1, "a", false),
+                  "[1, 'a', False]")
+  }
 
-  shouldConvert("a simple list", List(1, 2, 3), "[1, 2, 3]")
+  private def shouldBeBinaryEqual(label: String, jvmValue: Any, pyRepr: String) {
+    shouldConvert(label, jvmValue, pyRepr)
 
-  shouldConvert("a tuple3", (1, 2, 3), "(1, 2, 3)")
+    it("should be binary equal to pickle with %s".format(label)) {
+      val cmd = """
+        |import pickle
+        |import sys
+        |sys.stdout.write(pickle.dumps(%s, 2))
+      """.stripMargin.format(pyRepr)
+      val pyBytes = pyExecute(cmd, Array.empty)
+      val jvmBytes = pickled(jvmValue)
 
-  // shouldConvert("a long tuple", (1, 2, 3, 4, 5), "(1, 2, 3, 4, 5)")
+      if(pyBytes.toList != jvmBytes.toList) {
 
-  shouldConvert("a convert a homogonous list", List(1, "a", false),
-                "[1, 'a', False]")
+        println("Python: %s".format(toHex(pyBytes)))
+        println("JVM:    %s".format(toHex(jvmBytes)))
+        
+        jvmBytes should equal (pyBytes)
+      }
+    }
+
+  }
 
   private def shouldConvert(label: String, jvmValue: Any, pyRepr: String) {
-    it should "convert %s for pickle".format(label) in {
+    it("should convert %s pickle readable".format(label)) {
       val pickledValue = pickled(jvmValue)
       val cmd = """
         |import pickle
@@ -59,7 +93,7 @@ class PickleSpec extends FlatSpec with ShouldMatchers {
       new String(bytes, "UTF-8") should equal (pyRepr)
     }
 
-    it should "convert %s for cPickle".format(label) in {
+    it("should convert %s cPickle readable".format(label)) {
       val pickledValue = pickled(jvmValue)
       val cmd = """
         |import cPickle
@@ -98,4 +132,7 @@ class PickleSpec extends FlatSpec with ShouldMatchers {
 
     return out.toArray
   }
+
+  private def toHex(bs: Array[Byte]) =
+    bs.map(b ⇒ "%02x".format(b)).mkString(" ")
 }
