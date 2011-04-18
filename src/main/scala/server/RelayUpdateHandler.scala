@@ -28,7 +28,7 @@ class RelayUpdateHandler @Inject() (backendManager: BackendManager)
     val message = e.getMessage().toString()
     val parts = message.split(" ")
     if(parts.length == 3) {
-      val update = Update(parts(0), parts(1).toDouble, parts(2).toLong)
+      val update = Update(parts(0), parts(1).toDouble, parts(2).trim().toLong)
       backendManager(update)
     } else {
       log.error("Invalid Message %s".format(e))
