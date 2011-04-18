@@ -7,6 +7,7 @@ import org.scalatest.matchers.ShouldMatchers
 import graphite.relay.backend.Backend
 import graphite.relay.backend.Backends
 
+
 class ConsistentHashSpec extends FlatSpec with ShouldMatchers {
   behavior of "Consistent Hashing"
 
@@ -17,7 +18,7 @@ class ConsistentHashSpec extends FlatSpec with ShouldMatchers {
     val hashA = new ConsistentHash(backendsBefore, 10)
     val hashB = new ConsistentHash(backendsAfter, 10)
 
-    val numRuns = 5000
+    val numRuns = 1000
     val different = (0 to numRuns).foldLeft(0) { case (numDifferent, _) ⇒
       val key = UUID.randomUUID.toString
       val backendA = hashA(key)
@@ -32,6 +33,22 @@ class ConsistentHashSpec extends FlatSpec with ShouldMatchers {
 
     val ratio = different.toFloat / numRuns
     ratio should be < (0.02f) // should be ~ 0.01
+  }
+
+  it should "return an empty list with no backends" in {
+    val hash = new ConsistentHash(Backends.empty, 10)
+    hash("one") should equal (Nil)
+    hash("two") should equal (Nil)
+    hash(null) should equal (Nil)
+  }
+
+  it should "work when asking for a direct hash hit" in {
+    val backend = Backend("localhost", 123)
+    val backends = Backends(backend)
+    val hash = new ConsistentHash(backends, 1)
+   
+    val key = "%s-0".format(backend.toString)
+    hash(key) should equal (List(backend))
   }
 
   private def getBackends(count: Int) = {

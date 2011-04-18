@@ -1,7 +1,9 @@
 import sbt._
 import assembly.AssemblyBuilder
+import reaktor.scct.ScctProject
 
 class GraphiteRelayProject(info: ProjectInfo) extends DefaultProject(info) 
+                                              with ScctProject
                                               with AssemblyBuilder {
   lazy val jbossRepo = Repositories.jboss
   lazy val nexus = Repositories.nexusSnapshots

@@ -21,14 +21,19 @@ class RelayPipelineFactory @Inject() (handler: RelayUpdateHandler)
   def getPipeline = {
     val pipeline = Channels.pipeline()
 
-    pipeline.addLast("framer",  getFramer)
-    pipeline.addLast("decoder", new StringDecoder())
+    pipeline.addLast("framer",  framer)
+    pipeline.addLast("decoder", stringDecoder)
     pipeline.addLast("handler", handler)
     pipeline
   }
 
-  private def getFramer = {
-    val delimiter = ChannelBuffers.copiedBuffer("\n".getBytes)
-    new DelimiterBasedFrameDecoder(8192, true, delimiter)
+  private val framer = {
+    val delimiters = Array(
+      ChannelBuffers.copiedBuffer("\r\n".getBytes),
+      ChannelBuffers.copiedBuffer("\n".getBytes))
+
+    new DelimiterBasedFrameDecoder(8192, true, delimiters:_*)
   }
+
+  private val stringDecoder = new StringDecoder()
 }

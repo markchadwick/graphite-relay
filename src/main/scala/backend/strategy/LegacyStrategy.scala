@@ -14,7 +14,11 @@ import graphite.relay.backend.Backends
 class LegacyStrategy @Inject() (backends: Backends) extends BackendStrategy {
   assert(backends.backends.length >= 2)
 
-  private val rollups = backends.backends.find(_.host.startsWith("cache1")).get
+  private val rollups = backends.backends.find(_.host.startsWith("cache1")) match {
+    case Some(cache) ⇒ cache
+    case None ⇒ throw new RuntimeException("No cache1 backend")
+  }
+
   private val defaults = backends.backends.filter(_ != rollups)
 
   def apply(key: String): Traversable[Backend] = {
