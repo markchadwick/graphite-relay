@@ -18,7 +18,8 @@ import org.jboss.netty.handler.codec.string.StringEncoder
 class RelayPipelineFactory @Inject() (handler: RelayUpdateHandler)
                                      extends ChannelPipelineFactory {
 
-  private val delimiters = Delimiters.lineDelimiter()
+  private val delimiters = Array(
+    ChannelBuffers.copiedBuffer("\n".getBytes))
 
   def getPipeline = {
     val pipeline = Channels.pipeline()
