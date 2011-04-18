@@ -36,16 +36,20 @@ object Main {
 
     configPath match {
       case Some(config) ⇒
+        val runtime = Runtime.getRuntime
         val injector = getInjector(config)
         val relay = injector.getInstance(classOf[GraphiteRelay])
 
         val relayThread = new Thread(relay)
         relayThread.start()
 
-        // println("Waiting on key...")
-        // System.in.read()
-        // relay.shutdown()
-        // relayThread.join()
+        runtime.addShutdownHook(new Thread {
+          override def start {
+            log.info("Shutting down...")
+            relay.shutdown()
+            relayThread.join()
+          }
+        })
 
       case None ⇒
         parser.showUsage
