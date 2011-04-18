@@ -1,7 +1,6 @@
 package graphite.relay
 
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.DataInputStream
 import java.net.ServerSocket
 import java.net.SocketTimeoutException
 
@@ -14,7 +13,7 @@ class DummyBackend extends Runnable {
   val port = TestModule.freePort
   val socket = new ServerSocket(port)
   var running = true
-  var lines: List[String] = Nil
+  var messages: Int = 0
   socket.setSoTimeout(timeout)
 
   def asBackend = Backend("localhost", port)
@@ -22,12 +21,19 @@ class DummyBackend extends Runnable {
   def run = while(running) {
     try {
       val client = socket.accept()
-      val in = new BufferedReader(new InputStreamReader(client.getInputStream))
+      val in = new DataInputStream(client.getInputStream)
 
       try {
-        Stream.continually(in.readLine)
-              .takeWhile(_ != null)
-              .foreach(line ⇒ lines ::= line) 
+        var readingMessages = true
+        while(readingMessages) {
+          try {
+            val length = in.readInt()
+            in.skipBytes(length)
+            messages += 1
+          } catch {
+            case _ ⇒ readingMessages = false
+          }
+        }
       } finally {
         in.close()
         client.close()

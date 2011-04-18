@@ -52,7 +52,10 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
     }
   }
 
-  def shutdown() = bootstrap.releaseExternalResources()
+  def shutdown() = {
+    timer.stop()
+    bootstrap.releaseExternalResources()
+  }
 
   private def handleUpdate(updates: Traversable[Update], channel: Channel) = {
     channel.write(updates)

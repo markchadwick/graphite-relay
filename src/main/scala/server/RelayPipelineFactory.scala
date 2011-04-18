@@ -28,8 +28,11 @@ class RelayPipelineFactory @Inject() (handler: RelayUpdateHandler)
   }
 
   private val framer = {
-    val delimiter = ChannelBuffers.copiedBuffer("\n".getBytes)
-    new DelimiterBasedFrameDecoder(8192, true, delimiter)
+    val delimiters = Array(
+      ChannelBuffers.copiedBuffer("\r\n".getBytes),
+      ChannelBuffers.copiedBuffer("\n".getBytes))
+
+    new DelimiterBasedFrameDecoder(8192, true, delimiters:_*)
   }
 
   private val stringDecoder = new StringDecoder()
