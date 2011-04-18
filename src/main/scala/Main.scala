@@ -42,10 +42,10 @@ object Main {
         val relayThread = new Thread(relay)
         relayThread.start()
 
-        println("Waiting on key...")
-        System.in.read()
-        relay.shutdown()
-        relayThread.join()
+        // println("Waiting on key...")
+        // System.in.read()
+        // relay.shutdown()
+        // relayThread.join()
 
       case None ⇒
         parser.showUsage
