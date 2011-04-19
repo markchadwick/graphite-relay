@@ -24,7 +24,6 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
                     hostBuffer: Int, overflow: OverflowHandler) {
 
   private val log = Logger.getLogger(toString)
-  private val updateQueue = new LinkedBlockingQueue[Update](hostBuffer)
   private val timer = new HashedWheelTimer()
   timer.start()
 
@@ -38,17 +37,9 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
   handler.connect()
 
   def apply(update: Update) {
-    enqueue(update)
-
-    handler.channel map { channel ⇒
-      val updates = getBatchUpdates()
-      if(!updates.isEmpty) {
-        try {
-          channel.write(updates)
-        } catch {
-          case ex ⇒ updates.foreach(enqueue)
-        }
-      }
+    handler.channel match {
+      case Some(channel) ⇒ channel.write(List(update))
+      case None ⇒ overflow(update)
     }
   }
 
@@ -56,21 +47,6 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
     timer.stop()
     bootstrap.releaseExternalResources()
   }
-
-  private def handleUpdate(updates: Traversable[Update], channel: Channel) = {
-    channel.write(updates)
-  }
-
-  private def enqueue(update: Update) = {
-    if(updateQueue.size >= hostBuffer) {
-      overflow(update)
-    } else {
-      updateQueue.put(update)
-    }
-  }
-
-  private def getBatchUpdates() = 
-    Stream.continually(updateQueue.poll).takeWhile(_ != null)
 
   private def newBootstrap = new ClientBootstrap(
     new NioClientSocketChannelFactory(
