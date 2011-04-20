@@ -14,12 +14,14 @@ import org.jboss.netty.channel.ExceptionEvent
 import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
-import graphite.relay.backend.BackendManager
 import graphite.relay.Update
+import graphite.relay.aggregation.Aggregator
+import graphite.relay.backend.BackendManager
 
 
 @Singleton
-class RelayUpdateHandler @Inject() (backendManager: BackendManager)
+class RelayUpdateHandler @Inject() (backendManager: BackendManager,
+                                    aggregator: Aggregator)
                                    extends SimpleChannelUpstreamHandler {
 
   private val log = Logger.getLogger(classOf[RelayUpdateHandler])
@@ -30,6 +32,7 @@ class RelayUpdateHandler @Inject() (backendManager: BackendManager)
     if(parts.length == 3) {
       val update = Update(parts(0), parts(1).toDouble, parts(2).trim().toLong)
       backendManager(update)
+      aggregator(update)
     } else {
       log.error("Invalid Message %s".format(e))
       closeOnFlush(e.getChannel())
