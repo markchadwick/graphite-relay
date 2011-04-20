@@ -2,7 +2,6 @@ package graphite.relay.backend
 
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
-import java.util.concurrent.LinkedBlockingQueue
 
 import org.apache.log4j.Logger
 import org.jboss.netty.bootstrap.ClientBootstrap
@@ -29,7 +28,8 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
 
   private val bootstrap = newBootstrap
   private val address = new InetSocketAddress(backend.host, backend.port)
-  private val handler = new BackendClientHandler(channels, bootstrap, timer, reconnect, log)
+  private val handler = new BackendClientHandler(channels, bootstrap, timer,
+                              reconnect, hostBuffer, log)
   
   bootstrap.setPipelineFactory(newPipleFactory)
   bootstrap.setOption("remoteAddress", address)
@@ -37,9 +37,10 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
   handler.connect()
 
   def apply(update: Update) {
-    handler.channel match {
-      case Some(channel) ⇒ channel.write(List(update))
-      case None ⇒ overflow(update)
+    if(handler.isAvailable) {
+      handler(update)
+    } else {
+      overflow(update)
     }
   }
 
