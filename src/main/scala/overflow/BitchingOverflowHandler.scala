@@ -12,7 +12,7 @@ import graphite.relay.Update
   * will pay attention to it. You never pay attention to it. */
 @Singleton
 class BitchingOverflowHandler extends OverflowHandler {
-  private val maxBitch = 1000
+  private val maxBitch = 10000
   private val log = Logger.getLogger(classOf[BitchingOverflowHandler])
   private var lastBitch: Long = 0
 
