@@ -5,6 +5,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.mutable.Map
 
 import graphite.relay.Update
+import graphite.relay.backend.BackendManager
 
 
 abstract class Rule(pubPath: Path, matchPath: Path, frequency: Long)
@@ -12,22 +13,19 @@ abstract class Rule(pubPath: Path, matchPath: Path, frequency: Long)
   type Value
   protected def newValue: Value
   protected def applyUpdate(updateValue: Double, value: Value): Value
-  protected def toUpdate(metric: String, value: Value, ts: Long): Option[Update]
+  protected def combine(value: Value): Double
 
-  private type PendingKey = (String, Long)
   private val updateQueue = new LinkedBlockingQueue[Option[Update]](5000)
-  private var pending = Map.empty[PendingKey, Value]
+  private var pending = Map.empty[String, Value]
   private var nextUpdate: Option[Long] = None
-  private val updateLag = frequency * 3
 
+  var backend: Option[BackendManager] = None
 
   /** Enqueue an update for processing. There is no guarentee it will be updated
     * immediately. If the update queue is full, this method will block. */
   def apply(update: Update) = {
-    if(updateQueue.remainingCapacity > 0) {
+    if(updateQueue.remainingCapacity > 10) {
       updateQueue.put(Some(update))
-    } else {
-      println("%s dropping %s".format(this, update))
     }
   }
 
@@ -57,22 +55,16 @@ abstract class Rule(pubPath: Path, matchPath: Path, frequency: Long)
     }
     if(substitutions.exists(_ == None)) return
 
-    val subs = Map(substitutions.map(_.get):_*)
-    val path = pubPath.getPath(subs.toMap)
+    val subs = Map(substitutions.map(_.get):_*).toMap
+    val path = pubPath.getPath(subs)
 
-    val key = (path, timestampToKey(update.timestamp))
-    val value = pending.get(key).getOrElse(newValue)
-
-    pending(key) = applyUpdate(update.value, value)
+    val value = pending.get(path).getOrElse(newValue)
+    pending(path) = applyUpdate(update.value, value)
   }
-
-  private def timestampToKey(timestamp: Long) = timestamp / frequency
-  private def keyToTimestamp(key: Long) = key * frequency
 
   /** Determine if it's a reasonable time to flush based on when the last flush
     * was performed. */
   private def shouldFlush = {
-    val now = new Date().getTime / 1000
     nextUpdate match {
       case None ⇒
         nextUpdate = Some(now + frequency)
@@ -86,26 +78,18 @@ abstract class Rule(pubPath: Path, matchPath: Path, frequency: Long)
     * the past. This will happen synchronously, which should be fine, as it's in
     * its own thead, but pay attention if that's ever not the case. */
   private def flush() = {
-    val cutoff = (new Date().getTime / 1000) - updateLag
-
-    println("--------------------- UPDATE --------------------------")
-    println("NOW:    %s".format(new Date().getTime / 1000))
-    println("CUTUFF: %s".format(cutoff))
-    val updates = pending filter { case(key, value) ⇒
-      keyToTimestamp(key._2) < cutoff
+    try {
+      pending.mapValues(combine).foreach { case(metric, value) ⇒
+        val update = Update(metric, value, now)
+        backend.map(_.apply(update))
+        pending -= metric
+      }
+    } finally {
+      nextUpdate = None
     }
-
-    // Remove updates from pending
-    updates.foreach { case(key, _) ⇒ pending -= key }
-
-    // Transform them back into Updates
-    val updatesToPush = updates.map({ case(key, value) ⇒
-      toUpdate(key._1, value, keyToTimestamp(key._2))       
-    }).flatten
-
-    nextUpdate = None 
-    updatesToPush.foreach(println) 
   }
+
+  private def now = new Date().getTime / 1000L
 
   /** Human-readble format to display this rule as. at. */
   override def toString = 
@@ -118,29 +102,26 @@ abstract class Rule(pubPath: Path, matchPath: Path, frequency: Long)
 class SumRule(pubPath: Path, matchPath: Path, frequency: Long)
              extends Rule(pubPath, matchPath, frequency) {
   type Value = Double
-
   protected def newValue = 0d
-  protected def applyUpdate(update: Double, value: Double) =
-    update + value
-
-  protected def toUpdate(metric: String, value: Double, ts: Long) =
-    Some(Update(metric, value, ts))
+  protected def applyUpdate(update: Double, value: Double) = update + value
+  protected def combine(value: Double): Double = value
 }
 
 
 class AverageRule(pubPath: Path, matchPath: Path, frequency: Long)
                  extends Rule(pubPath, matchPath, frequency) {
   type Value = (Double, Int)
+
   protected def newValue = (0d, 0)
   protected def applyUpdate(update: Double, value: Value) = {
     (update + value._1, value._2 + 1)
   }
 
-  protected def toUpdate(metric: String, value: Value, ts: Long) = {
+  protected def combine(value: Value): Double = {
     val (total, count) = value
     count match {
-      case 0 ⇒ None
-      case c ⇒ Some(Update(metric, total/count, ts))
+      case 0 ⇒ 0
+      case _ ⇒ total / count
     }
   }
 }

@@ -9,12 +9,14 @@ import scala.io.Source
 import org.apache.log4j.Logger
 
 import graphite.relay.Update
+import graphite.relay.backend.BackendManager
 
 
 /** A serivce which will load all the aggregation rules from disk, spawn off a
   * worker for each rule, and send them updates as they trickle in */
 @Singleton
-class Aggregator @Inject() (configParser: ConfigParser,
+class Aggregator @Inject() (backendManager: BackendManager,
+                            configParser: ConfigParser,
                             @Named("aggregation.config") config: String) {
 
   private val log = Logger.getLogger(classOf[Aggregator])
@@ -40,6 +42,7 @@ class Aggregator @Inject() (configParser: ConfigParser,
     val rules = configParser(Source.fromFile(config).mkString).get
     rules foreach { rule ⇒
       log.info("Loaded rule: %s".format(rule))
+      rule.backend = Some(backendManager)
     }
     rules
   }
