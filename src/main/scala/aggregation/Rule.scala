@@ -54,7 +54,7 @@ abstract class Rule(pubPath: Path, matchPath: Path, frequency: Long) {
     * its own thead, but pay attention if that's ever not the case. */
   def flush(): Traversable[Update] = {
     val ts = now
-    nextUpdate = None
+    nextUpdate = Some(now + frequency)
     pending.mapValues(combine).map { case(metric, value) ⇒
       pending -= metric
       Update(metric, value, ts)

@@ -28,11 +28,6 @@ class BackendManager @Inject() (backends: Backends,
   private val backendClients = Map(backends.map(newClient):_*)
 
   def apply(update: Update) = pendingUpdates.offer(Some(update))
-  /*{
-    strategy(update.metric).foreach { backend ⇒
-      backendClients(backend)(update)
-    }
-  }*/
 
   override def run() = {
     log.info("Starting Up...")
