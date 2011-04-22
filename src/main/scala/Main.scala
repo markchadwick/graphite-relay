@@ -10,6 +10,7 @@ import com.google.inject.Guice
 import com.google.inject.name.Names
 import scopt.OptionParser
 
+import graphite.relay.aggregation.Aggregator
 import graphite.relay.backend.Backend
 import graphite.relay.backend.Backends
 import graphite.relay.backend.strategy.BackendStrategy
@@ -38,9 +39,16 @@ object Main {
       case Some(config) ⇒
         val runtime = Runtime.getRuntime
         val injector = getInjector(config)
+
+        val aggregator = injector.getInstance(classOf[Aggregator])
         val relay = injector.getInstance(classOf[GraphiteRelay])
 
+        val aggregatorThread = new Thread(aggregator)
+        aggregatorThread.setName("Aggregator")
+        aggregatorThread.start()
+
         val relayThread = new Thread(relay)
+        relayThread.setName("Relay")
         relayThread.start()
 
         runtime.addShutdownHook(new Thread {
@@ -48,6 +56,9 @@ object Main {
             log.info("Shutting down...")
             relay.shutdown()
             relayThread.join()
+
+            aggregator.shutdown()
+            aggregatorThread.join()
           }
         })
 

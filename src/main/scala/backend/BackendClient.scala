@@ -2,7 +2,6 @@ package graphite.relay.backend
 
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
-import java.util.concurrent.LinkedBlockingQueue
 
 import org.apache.log4j.Logger
 import org.jboss.netty.bootstrap.ClientBootstrap
