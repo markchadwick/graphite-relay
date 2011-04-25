@@ -35,7 +35,7 @@ class LoggingOverflowHandler @Inject() (@Named("overflow.directory") overflowDir
   roll()
   thread.start()
 
-  def apply(update: Update) = updates.put(Some(update))
+  def apply(update: Update) = updates.offer(Some(update))
 
 
   private def logUpdate(update: Update) = {

@@ -20,7 +20,7 @@ import graphite.relay.overflow.OverflowHandler
 
 
 class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
-                    hostBuffer: Int, overflow: OverflowHandler) {
+                    overflow: OverflowHandler) {
 
   private val log = Logger.getLogger(toString)
   private val timer = new HashedWheelTimer()

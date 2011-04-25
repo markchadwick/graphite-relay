@@ -26,6 +26,7 @@ class TestModule(backends: Backends) extends AbstractModule {
     bindConstant.annotatedWith(Names.named("relay.hostbuffer")).to(100)
     bindConstant.annotatedWith(Names.named("relay.port")).to(TestModule.freePort)
     bindConstant.annotatedWith(Names.named("relay.reconnect")).to(2)
+    bindConstant.annotatedWith(Names.named("aggregation.config")).to("/dev/null")
 
     bind(classOf[BackendStrategy]).to(classOf[RoundRobin])
     bind(classOf[Backends]).toInstance(backends)

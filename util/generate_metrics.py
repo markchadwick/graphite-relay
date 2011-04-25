@@ -24,9 +24,9 @@ if __name__ == '__main__':
 
     updates = 0
     while start <= stop:
-        num_metrics = 3 # random.randint(2, 7)
+        num_metrics = 5 # random.randint(2, 7)
         metric = '.'.join(random.choice(METRICS) for x in range(num_metrics))
-        value = random.random() * 1000
+        value = 1
         timestamp = int(time.mktime(datetime.now().timetuple())) #random.randint(start, stop)
         print '%s %s %s' % (metric, value, timestamp)
         updates += 1
