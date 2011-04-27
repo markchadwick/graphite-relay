@@ -104,6 +104,6 @@ A complete config file might be as follows:
 Pickle Format
 -------------
 The included Pickle formatting is _very_ rudimentary and only groks the data
-type that the Graphite backends expect. Because of itS simple format, this will
+type that the Graphite backends expect. Because of its simple format, this will
 actually use a very early Pickle encoding, which cPickle and friends can grok,
 but may not be most effecient.
