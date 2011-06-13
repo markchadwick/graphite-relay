@@ -29,7 +29,7 @@ class BackendClient(channels: ChannelGroup, backend: Backend, reconnect: Int,
   private val bootstrap = newBootstrap
   private val address = new InetSocketAddress(backend.host, backend.port)
   private val handler = new BackendClientHandler(channels, bootstrap, timer,
-                              reconnect, hostBuffer, log)
+                              reconnect, log)
   
   bootstrap.setPipelineFactory(newPipleFactory)
   bootstrap.setOption("remoteAddress", address)

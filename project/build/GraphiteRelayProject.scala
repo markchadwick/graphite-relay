@@ -30,6 +30,6 @@ class GraphiteRelayProject(info: ProjectInfo) extends DefaultProject(info)
     def log4j = "log4j" % "log4j" % "1.2.16"
     def netty = "org.jboss.netty" % "netty" % "3.2.4.Final"
     def scalatest = "org.scalatest" % "scalatest" % "1.3"
-    def scopt = "com.github.scopt" %% "scopt" % "1.0.0-SNAPSHOT"
+    def scopt = "com.github.scopt" %% "scopt" % "1.1.1"
   }
 }

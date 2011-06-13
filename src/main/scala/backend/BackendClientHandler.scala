@@ -22,10 +22,10 @@ import graphite.relay.Update
 
 
 class BackendClientHandler(channels: ChannelGroup, bootstrap: ClientBootstrap,  
-                           timer: Timer, reconnect: Int, queueSize: Int,
-                           log: Logger)
+                           timer: Timer, reconnect: Int, log: Logger)
                            extends SimpleChannelUpstreamHandler {
 
+  private val queueSize = 10000
   private val updateQueue = new LinkedBlockingQueue[Update](queueSize)
   private var channel: Option[Channel] = None
 
