@@ -110,7 +110,7 @@ object Main {
                                  .filter(_ != "")
     val backends = backendStrs.map { backendStr ⇒
       val parts = backendStr.split(":")
-      Backend(parts(0), parts(1).toInt)
+      Backend(parts(0), parts(1).toInt, parts(2))
     }
     Backends(backends:_*)
   }

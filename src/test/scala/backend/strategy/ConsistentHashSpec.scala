@@ -43,12 +43,24 @@ class ConsistentHashSpec extends FlatSpec with ShouldMatchers {
   }
 
   it should "work when asking for a direct hash hit" in {
-    val backend = Backend("localhost", 123)
+    val backend = Backend("localhost", 123, "a")
     val backends = Backends(backend)
     val hash = new ConsistentHash(backends, 1)
    
-    val key = "%s-0".format(backend.toString)
+    val key = "%s:0".format(backend.toInstanceString)
     hash(key) should equal (List(backend))
+  }
+
+  it should "comparing hashing results with Graphite web hashing" in {
+    val metric = "test.metric"
+    val backendA = Backend("127.0.0.1", 2101, "a")
+    val backendB = Backend("127.0.0.1", 2201, "b")
+    val backendC = Backend("127.0.0.1", 2301, "c")
+    val backendD = Backend("127.0.0.1", 2401, "d")
+    val backends = Backends(backendA,backendB,backendC,backendD)
+    // 100 - is built in value for Graphite web
+    val hash = new ConsistentHash(backends, 100)
+    hash(metric) should equal (List(backendB))
   }
 
   private def getBackends(count: Int) = {

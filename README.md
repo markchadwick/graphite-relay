@@ -46,10 +46,15 @@ Graphite backends which will recieve messages in the normal Graphite Pickle
 format. This should be a line-delimited list of `host:port` pairs. For example:
 
     relay.backends: \
-        localhost:1234 \
-        localhost:1235 \
-        localhost:1236 \
-        localhost:1237
+        127.0.0.1:1234:a \
+        127.0.0.1:1235:b \
+        127.0.0.1:1236:c \
+        127.0.0.1:1237:d
+
+(You can omit instance part(:a,:b...), but for ConsistentHash routing its mandatory
+Also please use same hostname as for CARBONLINK_HOSTS in graphite-web, i.e. not mixed localhost
+and 127.0.0.1, fqdn with hostname etc. Instance names and hostname are using in hashing algorithm
+and any inconsistency will break caching, which is mandatory if you have significant load)
 
 ### `relay.hostbuffer`
 Number of updates to buffer for each host in the event that it goes down
@@ -69,7 +74,8 @@ values are:
 - `graphite.relay.backend.strategy.RoundRobin`
 You may also set to the FQCN of any other `BackendStrategy` in the `CLASSPATH`.
 If using the `ConsistentHash` strategy, you will also have to set
-`hash.replicas` in the config. A reasonable default value is `10`.
+`hash.replicas` in the config. A reasonable default value is `100`.
+(NB: Please do not change it, unless Graphite-web use 100 as hardcoded default)
 
 ### `relay.overflowhandler`
 Handler which will recieve updates that no backend is available to handle. This
@@ -95,10 +101,10 @@ A complete config file might be as follows:
     overflow.directory:    /mnt/overflow/
     
     relay.backends: \
-        localhost:1234 \
-        localhost:1235 \
-        localhost:1236 \
-        localhost:1237
+        localhost:1234:a \
+        localhost:1235:b \
+        localhost:1236:c \
+        localhost:1237:d
 
 
 Pickle Format

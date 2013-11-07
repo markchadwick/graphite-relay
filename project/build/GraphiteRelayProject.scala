@@ -21,15 +21,15 @@ class GraphiteRelayProject(info: ProjectInfo) extends DefaultProject(info)
       "http://repository.jboss.org/nexus/content/groups/public/"
 
     def nexusSnapshots = "Nexus Snapshots" at
-      "http://nexus.scala-tools.org/content/repositories/snapshots/"
+      "https://oss.sonatype.org/content/repositories/snapshots/"
   }
 
   object Dependencies {
     def guice = "com.google.inject" % "guice" % "3.0"
     def jodaTime = "joda-time" % "joda-time" % "1.6.2"
     def log4j = "log4j" % "log4j" % "1.2.16"
-    def netty = "org.jboss.netty" % "netty" % "3.2.4.Final"
+    def netty = "org.jboss.netty" % "netty" % "3.7.0.Final"
     def scalatest = "org.scalatest" % "scalatest" % "1.3"
-    def scopt = "com.github.scopt" %% "scopt" % "1.0.0-SNAPSHOT"
+    def scopt = "com.github.scopt" %% "scopt" % "1.1.1"
   }
 }

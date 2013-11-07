@@ -1,6 +1,6 @@
 package graphite.relay.backend.strategy
 
-import java.util.zip.CRC32
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Named
 import scala.collection.SortedMap
@@ -33,13 +33,10 @@ class ConsistentHash @Inject() (backends: Backends,
     }
   }
 
-  /** Hash a given string. Note: The object instantation might hurt a bit, but
-    * at least it will make this method thread safe. Since it's in the tight
-    * look, it may need a set of eyes later on. */
+  /** Hash a given string in proper Graphite compatible format */
   private def hash(string: String): Long = {
-    val hasher = new CRC32()
-    hasher.update(string.getBytes)
-    return hasher.getValue
+    val hash = MessageDigest.getInstance("MD5").digest(string.getBytes)
+    return Integer.parseInt(hash.map("%02X".format(_)).mkString.slice(0,4), 16)
   }
 
   /** Initialize the hashing circle basted on the backends this class was
@@ -47,7 +44,7 @@ class ConsistentHash @Inject() (backends: Backends,
   private def getCircle = {
     val backendKeys = backends.map { backend ⇒
       (0 to replicas).map { i ⇒
-        hash("%s-%s".format(backend.toString, i)) → backend 
+        hash("%s:%s".format(backend.toInstanceString, i)) → backend
       }
     }
     SortedMap[Long, Backend](backendKeys.flatten:_*)
