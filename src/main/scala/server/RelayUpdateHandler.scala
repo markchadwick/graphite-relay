@@ -3,6 +3,8 @@ package graphite.relay.server
 import javax.inject.Singleton
 import javax.inject.Inject
 
+import java.lang.NumberFormatException
+
 import org.apache.log4j.Logger
 
 import org.jboss.netty.buffer.ChannelBuffers
@@ -28,10 +30,16 @@ class RelayUpdateHandler @Inject() (backendManager: BackendManager)
     val message = e.getMessage().toString()
     val parts = message.split(" ")
     if(parts.length == 3) {
-      val update = Update(parts(0), parts(1).toDouble, parts(2).trim().toLong)
-      backendManager(update)
+      try {
+        val update = Update(parts(0), parts(1).toDouble, parts(2).trim().toLong)
+        backendManager(update)
+      } catch {
+        case ex: NumberFormatException => {}
+      }
     } else {
-      log.error("Invalid Message %s".format(e))
+      // sorry, we don't care about this sh*t in logs
+      // TODO: make proper switch for loggig invalid msgs
+      //log.error("Invalid Message %s".format(e))
       closeOnFlush(e.getChannel())
     }
   }
