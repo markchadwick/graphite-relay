@@ -19,7 +19,7 @@ The include ones are:
   with a minimal change in (metric -> backend) mapping on backend addition or
   deletion.
 * `RoundRobin` - Cycle through the backends sending a batch of metrics to one at a
-  time (Not reccomended as this will not play nicely with other Graphite Tools).
+  time (Not recommended as this will not play nicely with other Graphite Tools).
 
 Overflow Handlers
 -----------------
@@ -42,7 +42,7 @@ moment) with [Guice](http://code.google.com/p/google-guice/) vomiting a stack
 trace on you while trying to start the program.
 
 ### `relay.backends`
-Graphite backends which will recieve messages in the normal Graphite Pickle
+Graphite backends which will receive messages in the normal Graphite Pickle
 format. This should be a line-delimited list of `host:port` pairs. For example:
 
     relay.backends: \
@@ -72,7 +72,7 @@ If using the `ConsistentHash` strategy, you will also have to set
 `hash.replicas` in the config. A reasonable default value is `10`.
 
 ### `relay.overflowhandler`
-Handler which will recieve updates that no backend is available to handle. This
+Handler which will receive updates that no backend is available to handle. This
 is generally because it is unavailable or overwhelmed. Default available values
 are:
 - `graphite.relay.overflow.BitchingOverflowHandler`
@@ -106,4 +106,4 @@ Pickle Format
 The included Pickle formatting is _very_ rudimentary and only groks the data
 type that the Graphite backends expect. Because of its simple format, this will
 actually use a very early Pickle encoding, which cPickle and friends can grok,
-but may not be most effecient.
+but may not be most efficient.
